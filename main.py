@@ -60,7 +60,8 @@ if __name__ == "__main__":
                         print("No more frames")
                         break
 
-                frame = get_frames_and_concatenate(cam0, cam1)
+                # frame = get_frames_and_concatenate(cam0, cam1)
+                _, frame = cam1.retrieve()
                 #mask = fgbg.apply(frame)
                 #_, mask = cv2.threshold(mask,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
@@ -182,15 +183,15 @@ if __name__ == "__main__":
                         )
 
                 info = [
-                        ("Coches", len(vehicles)),
-                        ("Personas", len(people ))
+                        ("Vehicles", len(vehicles)),
+                        ("People", len(people))
                 ]
 
                 # loop over the data and draw them it in the frame
                 for (i, (k, v)) in enumerate(info):
                         text = "{}: {}".format(k, v)
                         cv2.putText(frame, text, (
-                                10, 500 - ((i * 20) + 20)),
+                                10, 70 - ((i * 20) + 20)),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (53, 67, 234), 2
                                     )
 

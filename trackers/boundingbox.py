@@ -32,15 +32,22 @@ class BoundingBox:
                         self.endX,
                         self.endY
                 )
+                self.prev_rect = self.rect
+
                 self.start_point = (self.startX, self.startY)
                 self.end_point = (self.endX, self.endY)
                 self.color = self.colors[self.type]
                 self.center = self.get_center()
-                self.mov = array([0, 0])
+                self.mov = 0.9
                 self.stop_counter = 0
+                self.area = 0
 
-                self.ratio = 1280/ self.rect.width()
-                print(self.ratio)
+                self.up = self.rect.top()
+                self.down = self.rect.bottom()
+                self.left = self.rect.left()
+                self.right = self.rect.right()
+
+
 
         def update_localization(self, rect):
                 self.startX = rect.tl_corner.x
@@ -57,7 +64,6 @@ class BoundingBox:
                 return array([x,y])
 
         def update(self, bbox):
-
 
 
                 rect = bbox.rect
@@ -79,24 +85,70 @@ class BoundingBox:
                 self.type = bbox_name
                 self.color = self.colors[self.type]
 
+                # self.up = self.rect.top()
+                # self.down = self.rect.bottom()
+                # self.left = self.rect.left()
+                # self.right = self.rect.right()
+
                 self.trajectory()
+                self.prev_rect = self.rect
+
+
+
                 if self.status == 'stop':
                         self.color = self.colors['unknown']
 
 
         def trajectory(self):
 
-                prev_center = self.center
-                self.center = self.get_center()
-                self.mov = self.mov + 0.1*(self.center - prev_center - self.mov)*self.ratio
+                areaA = self.rect.intersect(self.prev_rect).area()
+                areaB = self.prev_rect.intersect(self.rect).area()
+                porc = (areaA + areaB) / (self.rect.area() + self.prev_rect.area())
+                # self.area = self.area + 0.01*(((self.rect.area() - self.prev_rect.area()) / self.rect.area()) - self.area)
 
-                if less(self.mov, array([1, 1])).all():
+                self.mov = self.mov + 0.01*(porc- self.mov)
+
+
+
+
+
+                if self.rect.bottom() < self.down:
+                      self.status = 'stop'
+
+                if self.rect.top() > self.up:
+                      self.status = 'stop'
+
+                if self.rect.right() < self.right:
+                       self.status = 'stop'
+
+                if self.rect.left() > self.left:
                         self.status = 'stop'
-                        if less(self.mov, array([-1, -1])).any():
-                                self.status = 'move'
 
-                else:
+                if self.rect.top() < self.up:
+                        self.up = self.rect.top()
                         self.status = 'move'
+
+                if self.rect.bottom() > self.down:
+                      self.down = self.rect.bottom()
+                      self.status = 'move'
+
+                if self.rect.right() > self.right:
+                       self.right = self.rect.right()
+                       self.status = 'move'
+
+                if self.rect.left() < self.left:
+                        self.left = self.rect.left()
+                        self.status = 'move left'
+
+                # self.status = str(self.up) + ' ' + str(self.right) + ' ' + str(self.down) + ' ' + str(self.left)
+
+
+
+                #
+                # if self.mov > 0.95:
+                #         self.status = 'stop'
+                # else:
+                #         self.status = 'move'
 
 
 
