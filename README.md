@@ -15,7 +15,7 @@ se plantea un prototipo que busca reducir la siniestralidad.
 
 |  Visión Delantera  | Visión Trasera |
 |---| --- |
-|   ![DIAS2P_2.PNG](images/Design/DIAS2P_2.PNG) | ![DIAS2P_1.PNG](images/Design/DIAS2P_1.PNG) |
+|  ![DIAS2P_2.png](images/Design/DIAS2P_2.png) | ![DIAS2P_1.png](images/Design/DIAS2P_1.png) |
 
 
 
