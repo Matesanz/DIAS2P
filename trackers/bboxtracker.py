@@ -66,7 +66,6 @@ class BBoxTracker:
                         for tracked, detected in zip(matrix[0], matrix[1]):
 
                                 if tracked == -1:
-                                        print('funciona')
                                         continue
 
                                 objectID = objectIDs[tracked]

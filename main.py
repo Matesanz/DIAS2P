@@ -1,4 +1,6 @@
 # import numpy as np
+import numpy as np
+
 from trackers.boundingbox import BoundingBox
 from trackers.bboxtracker import BBoxTracker
 from collections import OrderedDict
@@ -50,6 +52,7 @@ if __name__ == "__main__":
         vehicles_list = ['car', 'motorcycle', 'bus', 'truck']
         people_list = ['person', 'bicycle']
 
+        fgbg = cv2.createBackgroundSubtractorMOG2()
         # Grab both frames first, then retrieve to minimize latency between cameras
         while True:
 
@@ -58,6 +61,11 @@ if __name__ == "__main__":
                         break
 
                 frame = get_frames_and_concatenate(cam0, cam1)
+                #mask = fgbg.apply(frame)
+                #_, mask = cv2.threshold(mask,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+                # frame = cv2.bitwise_and(frame,frame,mask = mask)
+
 
                 bboxes_cars = []
                 bboxes_people = []
@@ -97,6 +105,7 @@ if __name__ == "__main__":
                                         car_tracker.start_track(frame, bbox.rect)
                                         car_trackers.append(car_tracker)
 
+
                                 if bbox.type in people_list:
                                         bboxes_people.append(bbox)
                                         people_tracker.start_track(frame, bbox.rect)
@@ -106,6 +115,10 @@ if __name__ == "__main__":
 
                                 tracked_objects.append(bbox)
 
+                        if len(people_trackers) == 0:
+                                people_bbox_tracker.deregisterall()
+                        if len(car_trackers) == 0:
+                                vehicle_bbox_tracker.deregisterall()
                 else:
 
                         # HERE WE USE DLIB TRACKER
@@ -160,13 +173,26 @@ if __name__ == "__main__":
 
                         cv2.putText(
                                 frame,
-                                bbox.type + ': ' + str(bbox_id),
+                                bbox.type + ': ' + str(bbox.status),
                                 bbox.start_point,
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1,
                                 bbox.color,
                                 2
                         )
+
+                info = [
+                        ("Coches", len(vehicles)),
+                        ("Personas", len(people ))
+                ]
+
+                # loop over the data and draw them it in the frame
+                for (i, (k, v)) in enumerate(info):
+                        text = "{}: {}".format(k, v)
+                        cv2.putText(frame, text, (
+                                10, 500 - ((i * 20) + 20)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (53, 67, 234), 2
+                                    )
 
                 totalFrames += 1
 
