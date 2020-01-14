@@ -21,3 +21,7 @@ se plantea un prototipo que busca reducir la siniestralidad.
 A través de reconocimiento de imágenes con Redes Neuronales se detecta la presencia de vehículos y peatones de manera que ante la posibilidad de
 que ambos se encuentren en el paso de cebra se activa un sistema de luces y alarmas que alertan de este hecho. Para ello se ha desarrollado un algoritmo de
 tracking basado en superficie que monitorea la posición de cada objeto dentro de la imagen.
+
+![Track_01.png](images/Machine%20Learning/Track_01.png)
+![Track_02.png](images/Machine%20Learning/Track_02.png)
+
