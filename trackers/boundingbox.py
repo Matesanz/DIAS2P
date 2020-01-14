@@ -58,7 +58,7 @@ class BoundingBox:
 
                 bbox_name = bbox.type
 
-                if self.type == 'unknown':
-                        self.type = bbox_name
-                        self.color = self.colors[self.type]
+                # if self.type == 'unknown':
+                self.type = bbox_name
+                self.color = self.colors[self.type]
 

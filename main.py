@@ -1,6 +1,7 @@
 # import numpy as np
 from trackers.boundingbox import BoundingBox
 from trackers.bboxtracker import BBoxTracker
+from collections import OrderedDict
 from imageai.Detection import ObjectDetection
 import dlib
 
@@ -13,10 +14,12 @@ from utils.utils import get_frames_and_concatenate, set_cameras, set_detector, c
 
 if __name__ == "__main__":
 
-        bbox_tracker = BBoxTracker(maxDisappeared=40)
+        vehicle_bbox_tracker = BBoxTracker(maxDisappeared=40)
+        people_bbox_tracker = BBoxTracker(maxDisappeared=40)
 
         color = (255, 0, 0)
-        thickness = 0.6
+        thickness = 2
+
         VIDEO = True
         VIDEO_PATH = "./Crosswalk.mp4"
         # Video / Camera
@@ -34,8 +37,6 @@ if __name__ == "__main__":
         totalFrames = 0
         skip_frames = 30
 
-        trackers = []
-
         detector = set_detector()
         custom_objects = detector.CustomObjects(
                 person=True,
@@ -46,6 +47,9 @@ if __name__ == "__main__":
                 truck=True,
         )
 
+        vehicles_list = ['car', 'motorcycle', 'bus', 'truck']
+        people_list = ['person', 'bicycle']
+
         # Grab both frames first, then retrieve to minimize latency between cameras
         while True:
 
@@ -55,7 +59,8 @@ if __name__ == "__main__":
 
                 frame = get_frames_and_concatenate(cam0, cam1)
 
-                bounding_boxes = []
+                bboxes_cars = []
+                bboxes_people = []
                 tracked_objects = []
                 trackable_objects = []
 
@@ -63,7 +68,9 @@ if __name__ == "__main__":
 
                         # HERE WE USE YOLOV3
 
-                        trackers = []
+                        car_trackers = []
+                        people_trackers = []
+
                         detections = detector.detectCustomObjectsFromImage(
                                 input_type="array",
                                 custom_objects=custom_objects,
@@ -82,20 +89,30 @@ if __name__ == "__main__":
                                         detected_object['name']
                                 )
 
-                                bounding_boxes.append(bbox)
-                                tracked_objects.append(bbox)
+                                car_tracker = dlib.correlation_tracker()
+                                people_tracker = dlib.correlation_tracker()
 
-                                tracker = dlib.correlation_tracker()
-                                tracker.start_track(frame, bbox.rect)
-                                trackers.append(tracker)
+                                if bbox.type in vehicles_list:
+                                        bboxes_cars.append(bbox)
+                                        car_tracker.start_track(frame, bbox.rect)
+                                        car_trackers.append(car_tracker)
+
+                                if bbox.type in people_list:
+                                        bboxes_people.append(bbox)
+                                        people_tracker.start_track(frame, bbox.rect)
+                                        people_trackers.append(people_tracker)
+
+                                # print('se han detectado', len(bboxes_people))
+
+                                tracked_objects.append(bbox)
 
                 else:
 
                         # HERE WE USE DLIB TRACKER
-                        for tracker in trackers:
+                        for ctracker in car_trackers:
 
-                                tracker.update(frame)
-                                position = tracker.get_position()
+                                ctracker.update(frame)
+                                position = ctracker.get_position()
 
                                 # startX, startY, endX, endY
                                 box_points = [
@@ -105,19 +122,32 @@ if __name__ == "__main__":
                                         int(position.bottom())
                                 ]
 
-                                bbox = BoundingBox(box_points)
-                                bounding_boxes.append(bbox)
+                                bbox = BoundingBox(box_points, name='car')
+                                bboxes_cars.append(bbox)
 
-                print('ahi va')
-                objects = bbox_tracker.update(bounding_boxes)
+                        for ptracker in people_trackers:
+                                ptracker.update(frame)
+                                position = ptracker.get_position()
 
-                tracked_objects = objects.copy()
-                # for obj in tracked_objects:
-                #         print(obj)
-                print('len objects', len(objects))
-                print('tracked objects', tracked_objects)
+                                # startX, startY, endX, endY
+                                box_points = [
+                                        int(position.left()),
+                                        int(position.top()),
+                                        int(position.right()),
+                                        int(position.bottom())
+                                ]
 
-                thickness = 2
+                                bbox = BoundingBox(box_points, name='person')
+                                bboxes_people.append(bbox)
+
+                # print('ahi va')
+                vehicles = vehicle_bbox_tracker.update(bboxes_cars)
+                people = people_bbox_tracker.update(bboxes_people)
+
+                tracked_objects = OrderedDict(
+                        list(vehicles.items())
+                        + list(people.items())
+                )
 
                 for bbox_id, bbox in tracked_objects.items():
 

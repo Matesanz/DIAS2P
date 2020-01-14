@@ -190,6 +190,7 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
 
 
     iou_matrix = np.ndarray(shape=(len(tracked_bboxes), len(detected_bboxes)))
+    empty_trk = []
     for t, trk in enumerate(tracked_bboxes):
         # t: index: 0,1,2,3....
         # trk: value: [x1, y1, x2, y2]
@@ -201,6 +202,9 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
             intersection = trk.rect.intersect(det.rect).area()
             iou_matrix[t][d] = intersection
 
+        if not iou_matrix[t].any():
+            empty_trk.append(t)
+
     # print('matriz de interseccion')
     # print(iou_matrix)
     #iou_matrix_normalized = (iou_matrix == iou_matrix.max(axis=1)[:, None]).astype(int)
@@ -211,6 +215,10 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
     # al objeto trackeado 0 le corresponde el detectado 2 y al
     # objeto trackeado 1 le corresponde el detectado 3
     hungarian_matrix = linear_sum_assignment(-iou_matrix)
+
+    for t in empty_trk:
+        if t in hungarian_matrix[0]:
+            hungarian_matrix[0][t] = -1
 
     return hungarian_matrix
 

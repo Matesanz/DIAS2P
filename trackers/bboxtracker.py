@@ -25,6 +25,10 @@ class BBoxTracker:
                 self.disappeared[self.nextObjectID] = 0
                 self.nextObjectID += 1
 
+        def deregisterall(self):
+                for obj in list(self.objects.keys()) :
+                        self.deregister(obj)
+
         def deregister(self, objectID):
                 # to deregister an object ID we delete the object ID from
                 # both of our respective dictionaries
@@ -61,6 +65,10 @@ class BBoxTracker:
 
                         for tracked, detected in zip(matrix[0], matrix[1]):
 
+                                if tracked == -1:
+                                        print('funciona')
+                                        continue
+
                                 objectID = objectIDs[tracked]
                                 detectedbbox = boundingBoxes[detected]
   
@@ -88,14 +96,14 @@ class BBoxTracker:
                                 # frames the object has been marked "disappeared"
                                 # for warrants deregistering the object
                                         if self.disappeared[object_id] > self.maxDisappeared:
-                                                print('eliminamos un viejo objeto')
+
                                                 self.deregister(object_id)
 
                         # otherwise, if the number of input centroids is greater
                         # than the number of existing object centroids we need to
                         # register each new input centroid as a trackable object
                         else:
-                                print('registramos nuevo objeto')
+
                                 for new_idx in unused_detected_idxs:
                                         self.register(boundingBoxes[new_idx])
 

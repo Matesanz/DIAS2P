@@ -1,11 +1,10 @@
 # Smart Campus UMA
 
-El plan propio Smart-Campus I es un proyecto impulsado por la **Universidad de Málaga**  
-en el que se desarrollan un conjunto de trabajos enfocados a potenciar las Smart-Cities. Dos de esos trabajos
-asignados al mismo equipo de investigación son:
+El plan propio Smart-Campus I es un proyecto impulsado por la **Universidad de Málaga**   en el que se desarrollan un conjunto de trabajos enfocados  
+a potenciar las Smart-Cities. Dos de esos trabajos asignados al mismo equipo de investigación son:
 
-- DIAS2P o *Dispositivo Inteligente de Asistencia en Seguridad para Paso de Peatones*.
-- StreetQR: Dispositivo de control de movimiento de viandantes con emisión de información.
+- **DIAS2P** o *Dispositivo Inteligente de Asistencia en Seguridad para Paso de Peatones*.
+- **StreetQR**: Dispositivo de control de movimiento de viandantes con emisión de información.
 
 ### ¿En qué consiste el DIAS2P?
 
