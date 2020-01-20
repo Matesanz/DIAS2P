@@ -1,5 +1,6 @@
 # load yolov3 model and perform object detection
 # based on https://github.com/experiencor/keras-yolo3
+from scipy.spatial import distance
 import numpy as np
 from numpy import expand_dims
 from keras.models import load_model
@@ -177,48 +178,38 @@ def get_detected_bboxes(detector):
 def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
 
     #calculates a matrix with all the percentage of intersections betwwen bboxes
-
-    # detected_boxes = [(x1,y1,x2,y2),...]
-    # tracked_boxes = [(x1,y1,x2,y2),...]
-
-    # if len(detected_bboxes) <= 0 or len(tracked_objects) <=0:
-    #     print('vacio')
-    #     return np.ndarray(0)
-
-    # print('detecciones frame anterior: ' + str(len(tracked_bboxes)))
-    # print('detecciones frame actual: ' + str(len(detected_bboxes)))
-
-
     iou_matrix = np.ndarray(shape=(len(tracked_bboxes), len(detected_bboxes)))
     empty_trk = []
     for t, trk in enumerate(tracked_bboxes):
         # t: index: 0,1,2,3....
         # trk: value: [x1, y1, x2, y2]
+        trk_center = trk.get_center()
+
         for d, det in enumerate(detected_bboxes):
             # d: index: 0,1,2....
             #det: value: [x1, y1, x2, y2]
 
             # calculate the intersection percentage [0,1]
-            intersection = trk.rect.intersect(det.rect).area()
-            iou_matrix[t][d] = intersection
+            det_center = det.get_center()
+            dist = distance.euclidean(trk_center, det_center)
+            iou_matrix[t][d] = dist
 
-        if not iou_matrix[t].any():
-            empty_trk.append(t)
 
-    # print('matriz de interseccion')
-    # print(iou_matrix)
+
+    print('matriz de interseccion')
+    print(iou_matrix)
     #iou_matrix_normalized = (iou_matrix == iou_matrix.max(axis=1)[:, None]).astype(int)
     #print(iou_matrix_normalized)
-    # print('matriz hungara')
+
 
     # hungarian_matrix = (array objetos trackeados([0, 1]), array objetos detectados([2, 3]))
     # al objeto trackeado 0 le corresponde el detectado 2 y al
     # objeto trackeado 1 le corresponde el detectado 3
-    hungarian_matrix = linear_sum_assignment(-iou_matrix)
+    hungarian_matrix = linear_sum_assignment(iou_matrix)
 
-    for t in empty_trk:
-        if t in hungarian_matrix[0]:
-            hungarian_matrix[0][t] = -1
+    print('matriz hungara')
+    print(hungarian_matrix)
+
 
     return hungarian_matrix
 

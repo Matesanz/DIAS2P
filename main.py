@@ -1,6 +1,6 @@
 # import numpy as np
 import numpy as np
-
+from scipy.spatial import distance
 from trackers.boundingbox import BoundingBox
 from trackers.bboxtracker import BBoxTracker
 from collections import OrderedDict
@@ -16,7 +16,7 @@ from utils.utils import get_frames_and_concatenate, set_cameras, set_detector, c
 
 if __name__ == "__main__":
 
-        vehicle_bbox_tracker = BBoxTracker(maxDisappeared=40)
+        vehicle_bbox_tracker = BBoxTracker(maxDisappeared=29)
         people_bbox_tracker = BBoxTracker(maxDisappeared=40)
 
         color = (255, 0, 0)
@@ -73,7 +73,11 @@ if __name__ == "__main__":
                 tracked_objects = []
                 trackable_objects = []
 
+                print(totalFrames % skip_frames)
+
                 if totalFrames % skip_frames == 0:
+
+                        print("######   Detecting ######")
 
                         # HERE WE USE YOLOV3
 
@@ -116,10 +120,10 @@ if __name__ == "__main__":
 
                                 tracked_objects.append(bbox)
 
-                        if len(people_trackers) == 0:
-                                people_bbox_tracker.deregisterall()
-                        if len(car_trackers) == 0:
-                                vehicle_bbox_tracker.deregisterall()
+                        # if len(people_trackers) == 0:
+                        #         people_bbox_tracker.deregisterall()
+                        # if len(car_trackers) == 0:
+                        #         vehicle_bbox_tracker.deregisterall()
                 else:
 
                         # HERE WE USE DLIB TRACKER
@@ -154,16 +158,24 @@ if __name__ == "__main__":
                                 bbox = BoundingBox(box_points, name='person')
                                 bboxes_people.append(bbox)
 
+                for i in bboxes_cars:
+                        frame = cv2.rectangle(
+                                frame,
+                                i.start_point,
+                                i.end_point,
+                                (0,0  , 0),
+                                6)
+
                 # print('ahi va')
                 vehicles = vehicle_bbox_tracker.update(bboxes_cars)
-                people = people_bbox_tracker.update(bboxes_people)
+                #people = people_bbox_tracker.update(bboxes_people)
 
                 tracked_objects = OrderedDict(
                         list(vehicles.items())
-                        + list(people.items())
+                        # + list(people.items())
                 )
 
-                for bbox_id, bbox in tracked_objects.items():
+                for (i, (bbox_id, bbox)) in enumerate(tracked_objects.items()):
 
                         frame = cv2.rectangle(
                                 frame,
@@ -174,7 +186,7 @@ if __name__ == "__main__":
 
                         cv2.putText(
                                 frame,
-                                bbox.type + ': ' + str(bbox.status),
+                                bbox.type + ': ' + str(i),
                                 bbox.start_point,
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1,
@@ -182,9 +194,12 @@ if __name__ == "__main__":
                                 2
                         )
 
+
+
+
                 info = [
                         ("Vehicles", len(vehicles)),
-                        ("People", len(people))
+                        #("People", len(people))
                 ]
 
                 # loop over the data and draw them it in the frame
@@ -194,6 +209,7 @@ if __name__ == "__main__":
                                 10, 70 - ((i * 20) + 20)),
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (53, 67, 234), 2
                                     )
+
 
                 totalFrames += 1
 

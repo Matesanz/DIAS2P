@@ -1,4 +1,5 @@
 import dlib
+from _collections import deque
 from numpy import gradient, sum, linalg, array, asarray, less
 from scipy.spatial.distance import cdist
 from scipy.stats import linregress
@@ -46,6 +47,8 @@ class BoundingBox:
                 self.down = self.rect.bottom()
                 self.left = self.rect.left()
                 self.right = self.rect.right()
+                self.story = deque([], maxlen=5)
+                self.final_status = self.status
 
 
 
@@ -61,7 +64,7 @@ class BoundingBox:
         def get_center(self):
                 x = self.rect.dcenter().x
                 y = self.rect.dcenter().y
-                return array([x,y])
+                return (x, y)
 
         def update(self, bbox):
 
@@ -83,7 +86,7 @@ class BoundingBox:
 
                 bbox_name = bbox.type
                 self.type = bbox_name
-                self.color = self.colors[self.type]
+
 
                 # self.up = self.rect.top()
                 # self.down = self.rect.bottom()
@@ -93,9 +96,9 @@ class BoundingBox:
                 self.trajectory()
                 self.prev_rect = self.rect
 
+                self.color = self.colors[self.type]
 
-
-                if self.status == 'stop':
+                if self.final_status == 'stop':
                         self.color = self.colors['unknown']
 
 
@@ -109,46 +112,34 @@ class BoundingBox:
                 self.mov = self.mov + 0.01*(porc- self.mov)
 
 
-
-
-
-                if self.rect.bottom() < self.down:
-                      self.status = 'stop'
-
-                if self.rect.top() > self.up:
-                      self.status = 'stop'
-
-                if self.rect.right() < self.right:
-                       self.status = 'stop'
-
-                if self.rect.left() > self.left:
-                        self.status = 'stop'
+                self.status = 'stop'
 
                 if self.rect.top() < self.up:
                         self.up = self.rect.top()
                         self.status = 'move'
+                        self.story.append(self.status)
 
                 if self.rect.bottom() > self.down:
                       self.down = self.rect.bottom()
                       self.status = 'move'
+                      self.story.append(self.status)
 
                 if self.rect.right() > self.right:
                        self.right = self.rect.right()
                        self.status = 'move'
+                       self.story.append(self.status)
 
                 if self.rect.left() < self.left:
                         self.left = self.rect.left()
-                        self.status = 'move left'
+                        self.status = 'move'
+                        self.story.append(self.status)
 
-                # self.status = str(self.up) + ' ' + str(self.right) + ' ' + str(self.down) + ' ' + str(self.left)
+                self.story.append(self.status)
 
-
-
-                #
-                # if self.mov > 0.95:
-                #         self.status = 'stop'
-                # else:
-                #         self.status = 'move'
+                if self.story.count('move') > 1:
+                        self.final_status = "move"
+                else:
+                        self.final_status = "stop"
 
 
 

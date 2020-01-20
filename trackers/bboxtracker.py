@@ -13,6 +13,7 @@ class BBoxTracker:
                 self.objects = OrderedDict()
                 self.disappeared = OrderedDict()
 
+
                 # store the number of maximum consecutive frames a given
                 # object is allowed to be marked as "disappeared" until we
                 # need to deregister the object from tracking
@@ -61,7 +62,11 @@ class BBoxTracker:
                         unused_objects_ids = objectIDs.copy()
                         unused_detected_idxs = list(range(0, len(boundingBoxes)))
 
+                        print('Tenemos ' + str(len(objectbboxes)) + ' objetos siendo trackeados')
+                        print('Tenemos ' + str(len(boundingBoxes)) + ' bboxes con las que comparar')
+
                         matrix = calculate_intersection_matrix(boundingBoxes, objectbboxes)
+
 
                         for tracked, detected in zip(matrix[0], matrix[1]):
 
