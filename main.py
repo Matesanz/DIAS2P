@@ -16,8 +16,8 @@ from utils.utils import get_frames_and_concatenate, set_cameras, set_detector, c
 
 if __name__ == "__main__":
 
-        vehicle_bbox_tracker = BBoxTracker(maxDisappeared=29)
-        people_bbox_tracker = BBoxTracker(maxDisappeared=40)
+        vehicle_bbox_tracker = BBoxTracker(maxDisappeared=15)
+        people_bbox_tracker = BBoxTracker(maxDisappeared=50)
 
         color = (255, 0, 0)
         thickness = 2
@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
         # initialize the total number of frames processed thus far,
         totalFrames = 0
-        skip_frames = 30
+        skip_frames = 16
 
         detector = set_detector()
         custom_objects = detector.CustomObjects(
@@ -62,10 +62,12 @@ if __name__ == "__main__":
 
                 # frame = get_frames_and_concatenate(cam0, cam1)
                 _, frame = cam1.retrieve()
-                #mask = fgbg.apply(frame)
-                #_, mask = cv2.threshold(mask,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-                # frame = cv2.bitwise_and(frame,frame,mask = mask)
+                frame = cv2.resize(frame, (480, 320))
+                mask = fgbg.apply(frame)
+                # mask = cv2.erode(mask, None, iterations=2)
+                mask = cv2.dilate(mask, None, iterations=2)
+                # _, cam = cv2.threshold(mask,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+                cam = cv2.bitwise_and(frame,frame,mask = mask)
 
 
                 bboxes_cars = []
@@ -77,7 +79,6 @@ if __name__ == "__main__":
 
                 if totalFrames % skip_frames == 0:
 
-                        print("######   Detecting ######")
 
                         # HERE WE USE YOLOV3
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
                         detections = detector.detectCustomObjectsFromImage(
                                 input_type="array",
                                 custom_objects=custom_objects,
-                                input_image=frame,
+                                input_image=cam,
                                 minimum_percentage_probability=30,
                                 output_type="array")
 
@@ -106,30 +107,23 @@ if __name__ == "__main__":
                                 people_tracker = dlib.correlation_tracker()
 
                                 if bbox.type in vehicles_list:
-                                        bboxes_cars.append(bbox)
+                                        # bboxes_cars.append(bbox)
                                         car_tracker.start_track(frame, bbox.rect)
                                         car_trackers.append(car_tracker)
 
 
                                 if bbox.type in people_list:
-                                        bboxes_people.append(bbox)
+                                        # bboxes_people.append(bbox)
                                         people_tracker.start_track(frame, bbox.rect)
                                         people_trackers.append(people_tracker)
 
-                                # print('se han detectado', len(bboxes_people))
 
-                                tracked_objects.append(bbox)
-
-                        # if len(people_trackers) == 0:
-                        #         people_bbox_tracker.deregisterall()
-                        # if len(car_trackers) == 0:
-                        #         vehicle_bbox_tracker.deregisterall()
                 else:
 
                         # HERE WE USE DLIB TRACKER
                         for ctracker in car_trackers:
 
-                                ctracker.update(frame)
+                                ctracker.update(cam)
                                 position = ctracker.get_position()
 
                                 # startX, startY, endX, endY
@@ -144,7 +138,7 @@ if __name__ == "__main__":
                                 bboxes_cars.append(bbox)
 
                         for ptracker in people_trackers:
-                                ptracker.update(frame)
+                                ptracker.update(cam)
                                 position = ptracker.get_position()
 
                                 # startX, startY, endX, endY
@@ -166,13 +160,13 @@ if __name__ == "__main__":
                                 (0,0  , 0),
                                 6)
 
-                # print('ahi va')
+
                 vehicles = vehicle_bbox_tracker.update(bboxes_cars)
-                #people = people_bbox_tracker.update(bboxes_people)
+                people = people_bbox_tracker.update(bboxes_people)
 
                 tracked_objects = OrderedDict(
                         list(vehicles.items())
-                        # + list(people.items())
+                         + list(people.items())
                 )
 
                 for (i, (bbox_id, bbox)) in enumerate(tracked_objects.items()):
@@ -186,7 +180,7 @@ if __name__ == "__main__":
 
                         cv2.putText(
                                 frame,
-                                bbox.type + ': ' + str(i),
+                                bbox.type + ': ' + str(bbox_id),
                                 bbox.start_point,
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1,
@@ -199,7 +193,7 @@ if __name__ == "__main__":
 
                 info = [
                         ("Vehicles", len(vehicles)),
-                        #("People", len(people))
+                        ("People", len(people))
                 ]
 
                 # loop over the data and draw them it in the frame
@@ -214,7 +208,8 @@ if __name__ == "__main__":
                 totalFrames += 1
 
                 cv2.imshow("Frame", frame)
-                key = cv2.waitKey(0) & 0xFF
+                cv2.imshow("Mask", cam)
+                key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                         # close any open windows
                         cv2.destroyAllWindows()

@@ -42,6 +42,14 @@ class BBoxTracker:
                 # Anotamos los objetos como desaparecidos
                 # durante un frame y los devolvemos tal cual están
                 if len(boundingBoxes) == 0:
+                        for objectID in list(self.disappeared.keys()):
+                                self.disappeared[objectID] += 1
+
+                                # if we have reached a maximum number of consecutive
+                                # frames where a given object has been marked as
+                                # missing, deregister it
+                                if self.disappeared[objectID] > self.maxDisappeared:
+                                        self.deregister(objectID)
                         return self.objects
 
                 # Si no hay objetos siendo trackeados anotamos
@@ -62,8 +70,8 @@ class BBoxTracker:
                         unused_objects_ids = objectIDs.copy()
                         unused_detected_idxs = list(range(0, len(boundingBoxes)))
 
-                        print('Tenemos ' + str(len(objectbboxes)) + ' objetos siendo trackeados')
-                        print('Tenemos ' + str(len(boundingBoxes)) + ' bboxes con las que comparar')
+                        # print('Tenemos ' + str(len(objectbboxes)) + ' objetos siendo trackeados')
+                        # print('Tenemos ' + str(len(boundingBoxes)) + ' bboxes con las que comparar')
 
                         matrix = calculate_intersection_matrix(boundingBoxes, objectbboxes)
 
