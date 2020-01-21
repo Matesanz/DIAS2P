@@ -39,16 +39,10 @@ class BoundingBox:
                 self.end_point = (self.endX, self.endY)
                 self.color = self.colors[self.type]
                 self.center = self.get_center()
-                self.mov = 0.9
-                self.stop_counter = 0
-                self.area = 0
 
-                self.up = self.rect.top()
-                self.down = self.rect.bottom()
-                self.left = self.rect.left()
-                self.right = self.rect.right()
-                self.story = deque([], maxlen=5)
-                self.final_status = self.status
+                self.mov = ['unknown', 'unknown']
+                self.dx = 0
+                self. dy = 0
 
 
 
@@ -70,76 +64,40 @@ class BoundingBox:
 
 
                 rect = bbox.rect
+
                 self.startX = rect.tl_corner().x
                 self.startY = rect.tl_corner().y
                 self.endX = rect.br_corner().x
                 self.endY = rect.br_corner().y
 
-                self.rect = dlib.rectangle(
-                        self.startX,
-                        self.startY,
-                        self.endX,
-                        self.endY
-                )
+                self.rect = rect
+
                 self.start_point = (self.startX, self.startY)
                 self.end_point = (self.endX, self.endY)
 
-                bbox_name = bbox.type
-                self.type = bbox_name
 
-
-                # self.up = self.rect.top()
-                # self.down = self.rect.bottom()
-                # self.left = self.rect.left()
-                # self.right = self.rect.right()
 
                 self.trajectory()
-                self.prev_rect = self.rect
 
-                self.color = self.colors[self.type]
 
-                if self.final_status == 'stop':
-                        self.color = self.colors['unknown']
 
 
         def trajectory(self):
 
-                areaA = self.rect.intersect(self.prev_rect).area()
-                areaB = self.prev_rect.intersect(self.rect).area()
-                porc = (areaA + areaB) / (self.rect.area() + self.prev_rect.area())
-                # self.area = self.area + 0.01*(((self.rect.area() - self.prev_rect.area()) / self.rect.area()) - self.area)
+                prev_center = (self.prev_rect.dcenter().x, self.prev_rect.dcenter().y)
+                actual_center = self.get_center()
 
-                self.mov = self.mov + 0.01*(porc- self.mov)
+                dx = actual_center[0] - prev_center[0]
+                dy = actual_center[1] - prev_center[1]
 
+                self.dx += 0.1*(dx - self.dx)
+                self.dy += 0.1*(dy - self.dy)
 
-                self.status = 'stop'
+                self.prev_rect = self.rect
 
-                if self.rect.top() < self.up:
-                        self.up = self.rect.top()
-                        self.status = 'move'
-                        self.story.append(self.status)
+                self.mov[0] = 'left' if self.dx < 0 else 'right'
+                self.mov[1] = 'up' if self.dy < 0 else 'down'
 
-                if self.rect.bottom() > self.down:
-                      self.down = self.rect.bottom()
-                      self.status = 'move'
-                      self.story.append(self.status)
-
-                if self.rect.right() > self.right:
-                       self.right = self.rect.right()
-                       self.status = 'move'
-                       self.story.append(self.status)
-
-                if self.rect.left() < self.left:
-                        self.left = self.rect.left()
-                        self.status = 'move'
-                        self.story.append(self.status)
-
-                self.story.append(self.status)
-
-                if self.story.count('move') > 1:
-                        self.final_status = "move"
-                else:
-                        self.final_status = "stop"
 
 
 

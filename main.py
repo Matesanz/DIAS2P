@@ -112,10 +112,10 @@ if __name__ == "__main__":
                                         car_trackers.append(car_tracker)
 
 
-                                if bbox.type in people_list:
-                                        # bboxes_people.append(bbox)
-                                        people_tracker.start_track(frame, bbox.rect)
-                                        people_trackers.append(people_tracker)
+                                # if bbox.type in people_list:
+                                #         # bboxes_people.append(bbox)
+                                #         people_tracker.start_track(frame, bbox.rect)
+                                #         people_trackers.append(people_tracker)
 
 
                 else:
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                         # HERE WE USE DLIB TRACKER
                         for ctracker in car_trackers:
 
-                                ctracker.update(cam)
+                                ctracker.update(frame)
                                 position = ctracker.get_position()
 
                                 # startX, startY, endX, endY
@@ -137,20 +137,20 @@ if __name__ == "__main__":
                                 bbox = BoundingBox(box_points, name='car')
                                 bboxes_cars.append(bbox)
 
-                        for ptracker in people_trackers:
-                                ptracker.update(cam)
-                                position = ptracker.get_position()
-
-                                # startX, startY, endX, endY
-                                box_points = [
-                                        int(position.left()),
-                                        int(position.top()),
-                                        int(position.right()),
-                                        int(position.bottom())
-                                ]
-
-                                bbox = BoundingBox(box_points, name='person')
-                                bboxes_people.append(bbox)
+                        # for ptracker in people_trackers:
+                        #         ptracker.update(frame)
+                        #         position = ptracker.get_position()
+                        #
+                        #         # startX, startY, endX, endY
+                        #         box_points = [
+                        #                 int(position.left()),
+                        #                 int(position.top()),
+                        #                 int(position.right()),
+                        #                 int(position.bottom())
+                        #         ]
+                        #
+                        #         bbox = BoundingBox(box_points, name='person')
+                        #         bboxes_people.append(bbox)
 
                 for i in bboxes_cars:
                         frame = cv2.rectangle(
@@ -160,13 +160,22 @@ if __name__ == "__main__":
                                 (0,0  , 0),
                                 6)
 
+                for i in bboxes_people:
+                        frame = cv2.rectangle(
+                                frame,
+                                i.start_point,
+                                i.end_point,
+                                (0,0,255),
+                                6)
+
+                print('longitud de objetos coche: ' + str(len(bboxes_cars)))
 
                 vehicles = vehicle_bbox_tracker.update(bboxes_cars)
-                people = people_bbox_tracker.update(bboxes_people)
+                # people = people_bbox_tracker.update(bboxes_people)
 
                 tracked_objects = OrderedDict(
                         list(vehicles.items())
-                         + list(people.items())
+                         # + list(people.items())
                 )
 
                 for (i, (bbox_id, bbox)) in enumerate(tracked_objects.items()):
@@ -180,7 +189,7 @@ if __name__ == "__main__":
 
                         cv2.putText(
                                 frame,
-                                bbox.type + ': ' + str(bbox_id),
+                                bbox.type + ': ' + str(bbox.mov),
                                 bbox.start_point,
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1,
@@ -193,7 +202,7 @@ if __name__ == "__main__":
 
                 info = [
                         ("Vehicles", len(vehicles)),
-                        ("People", len(people))
+                        # ("People", len(people))
                 ]
 
                 # loop over the data and draw them it in the frame
@@ -209,7 +218,7 @@ if __name__ == "__main__":
 
                 cv2.imshow("Frame", frame)
                 cv2.imshow("Mask", cam)
-                key = cv2.waitKey(1) & 0xFF
+                key = cv2.waitKey(0) & 0xFF
                 if key == ord("q"):
                         # close any open windows
                         cv2.destroyAllWindows()

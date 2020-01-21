@@ -196,8 +196,8 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
 
 
 
-    # print('matriz de interseccion')
-    # print(iou_matrix)
+    print('matriz de interseccion')
+    print(iou_matrix)
     #iou_matrix_normalized = (iou_matrix == iou_matrix.max(axis=1)[:, None]).astype(int)
     #print(iou_matrix_normalized)
 
@@ -207,8 +207,8 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
     # objeto trackeado 1 le corresponde el detectado 3
     hungarian_matrix = linear_sum_assignment(iou_matrix)
 
-    # print('matriz hungara')
-    # print(hungarian_matrix)
+    print('matriz hungara')
+    print(hungarian_matrix)
 
 
     return hungarian_matrix
