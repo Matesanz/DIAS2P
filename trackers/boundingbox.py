@@ -75,9 +75,8 @@ class BoundingBox:
                 self.start_point = (self.startX, self.startY)
                 self.end_point = (self.endX, self.endY)
 
-
-
                 self.trajectory()
+                # self.calculate_color()
 
 
 
@@ -97,6 +96,14 @@ class BoundingBox:
 
                 self.mov[0] = 'left' if self.dx < 0 else 'right'
                 self.mov[1] = 'up' if self.dy < 0 else 'down'
+
+        def calculate_color(self):
+
+                fraction = abs((7 - abs(self.dx)) / 7)
+                r = 255 * fraction
+                self.color = (r, r, 255)
+
+
 
 
 
