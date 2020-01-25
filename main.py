@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
         # Define the codec and create VideoWriter object
         # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-        # out = cv2.VideoWriter('output.mp4', fourcc, 30.0, (1280 , 720))
+
 
         VIDEO = True
         VIDEO_PATH = "./Crosswalk.mp4"
