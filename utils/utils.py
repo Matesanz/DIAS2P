@@ -80,7 +80,7 @@ def draw_boxes(image, bboxes, ids=[0,1,2], font = cv2.FONT_HERSHEY_SIMPLEX, font
     return image
 
 
-def set_cameras(camera_width=720, camera_height=480, index_cam0=0, index_cam1=2):
+def set_cameras(camera_width=320, camera_height=270, index_cam0=0, index_cam1=1):
     """
     Vigilar los índices de las cámaras. Puede que sean 0 y 1 ó 0 y 2..
     """
@@ -94,8 +94,8 @@ def set_cameras(camera_width=720, camera_height=480, index_cam0=0, index_cam1=2)
     c1.set(cv2.CAP_PROP_FRAME_HEIGHT, camera_height)
 
     # Use MJPEG to avoid overloading the USB 2.0 bus at this resolutionq
-    c0.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-    c1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+    # c0.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+    # c1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
 
     return c0, c1
 
@@ -123,9 +123,9 @@ def set_detector():
 
 def get_frames_and_concatenate(c0, c1):
     _, c0_frame = c0.retrieve()
-    c0_frame = crop_horizontal(c0_frame)
+    # c0_frame = crop_horizontal(c0_frame)
     _, c1_frame = c1.retrieve()
-    c1_frame = crop_horizontal(c1_frame)
+    # c1_frame = crop_horizontal(c1_frame)
 
     # WE CONCATENATE BOTH IMAGES HERE
     vis = np.concatenate((c0_frame, c1_frame), axis=1)
@@ -196,8 +196,8 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
 
 
 
-    print('matriz de interseccion')
-    print(iou_matrix)
+    # print('matriz de interseccion')
+    # print(iou_matrix)
     #iou_matrix_normalized = (iou_matrix == iou_matrix.max(axis=1)[:, None]).astype(int)
     #print(iou_matrix_normalized)
 
@@ -207,8 +207,8 @@ def calculate_intersection_matrix(detected_bboxes, tracked_bboxes):
     # objeto trackeado 1 le corresponde el detectado 3
     hungarian_matrix = linear_sum_assignment(iou_matrix)
 
-    print('matriz hungara')
-    print(hungarian_matrix)
+    # print('matriz hungara')
+    # print(hungarian_matrix)
 
 
     return hungarian_matrix

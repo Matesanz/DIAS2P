@@ -1,17 +1,9 @@
-# import numpy as np
-import numpy as np
-from scipy.spatial import distance
+# from utils.gpios import *
 from trackers.boundingbox import BoundingBox
 from trackers.bboxtracker import BBoxTracker
 from collections import OrderedDict
-from imageai.Detection import ObjectDetection
 import dlib
-
-
 import cv2
-# from collections import OrderedDict
-# from arduino.main_arduino import arduino
-# from ImageAI.imageai.Detection import ObjectDetection
 from utils.utils import get_frames_and_concatenate, set_cameras, set_detector, check_cameras
 
 if __name__ == "__main__":
@@ -22,9 +14,7 @@ if __name__ == "__main__":
         color = (255, 0, 0)
         thickness = 2
 
-        # Define the codec and create VideoWriter object
-        # fourcc = cv2.VideoWriter_fourcc(*'MP4V')
-
+        #activate_jetson_board()
 
         VIDEO = True
         VIDEO_PATH = "./Crosswalk.mp4"
@@ -46,11 +36,11 @@ if __name__ == "__main__":
         detector = set_detector()
         custom_objects = detector.CustomObjects(
                 person=True,
-                # bicycle=True,
+                bicycle=True,
                 car=True,
-                # motorcycle=True,
-                # bus=True,
-                # truck=True,
+                motorcycle=True,
+                bus=True,
+                truck=True,
         )
 
         vehicles_list = ['car', 'motorcycle', 'bus', 'truck']
@@ -65,8 +55,9 @@ if __name__ == "__main__":
                         break
 
                 # frame = get_frames_and_concatenate(cam0, cam1)
-                _, frame = cam1.retrieve()
-                frame = cv2.resize(frame, (480, 270))
+                frame = get_frames_and_concatenate(cam0, cam1)
+                if VIDEO:
+                        frame = cv2.resize(frame, (960, 270))
                 mask = fgbg.apply(frame)
                 mask = cv2.dilate(mask, None, iterations=2)
                 cam = cv2.bitwise_and(frame,frame,mask = mask)
@@ -77,7 +68,7 @@ if __name__ == "__main__":
                 tracked_objects = []
                 trackable_objects = []
 
-                print(totalFrames % skip_frames)
+                # print(totalFrames % skip_frames)
 
                 if totalFrames % skip_frames == 0:
 
@@ -162,8 +153,10 @@ if __name__ == "__main__":
                 if len(vehicles) > 0 and len(people) > 0:
                         seguridad = True
                         frame = cv2.rectangle(frame, (440, 0), (480, 40), (255,255,255), -1)
+                        #activate_warnings()
                 else:
                         seguridad = False
+                        #deactivate_warnings()
 
                 ######## DISPLAY OPTIONS ##########
 
@@ -214,6 +207,7 @@ if __name__ == "__main__":
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                         # close any open windows
+                        #deactivate_jetson_board()
                         cv2.destroyAllWindows()
                         # out.release()
                         break
