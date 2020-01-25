@@ -80,7 +80,7 @@ def draw_boxes(image, bboxes, ids=[0,1,2], font = cv2.FONT_HERSHEY_SIMPLEX, font
     return image
 
 
-def set_cameras(camera_width=320, camera_height=270, index_cam0=0, index_cam1=1):
+def set_cameras(camera_width=320, camera_height=240, index_cam0=0, index_cam1=1):
     """
     Vigilar los índices de las cámaras. Puede que sean 0 y 1 ó 0 y 2..
     """
