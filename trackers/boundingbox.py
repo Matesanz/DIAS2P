@@ -94,6 +94,8 @@ class BoundingBox:
 
                 self.prev_rect = self.rect
 
+                self.status = self.dx/self.dy
+
                 self.mov[0] = 'left' if self.dx < 0 else 'right'
                 self.mov[1] = 'up' if self.dy < 0 else 'down'
 

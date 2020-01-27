@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
                         cv2.putText(
                                 frame,
-                                bbox.type + ': ' + str(bbox.mov[0]),
+                                bbox.type + ': ' + str(bbox.status),
                                 bbox.start_point,
                                 cv2.FONT_HERSHEY_SIMPLEX,
                                 1,
