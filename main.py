@@ -210,6 +210,6 @@ if __name__ == "__main__":
                 if key == ord("q"):
                         # close any open windows
                         deactivate_jetson_board()
-                        cv2.destroyAllWindows()
+                        # cv2.destroyAllWindows()
                         # out.release()
                         break

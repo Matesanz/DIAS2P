@@ -26,86 +26,94 @@ import jetson.utils
 import cv2
 import sys
 
+from utils import utils, classes
+from trackers.bboxssd import BBox
+
 
 if __name__ == "__main__":
 
+        # Show live results
+        # when production set this to False as it consume resources
         SHOW = True
 
         # load the object detection network
-        # net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
+        arch = "ssd-mobilenet-v2"
         overlay = "box,labels,conf"
+        threshold = 0.5
         W, H = (800, 480)
-        net2 = jetson.inference.detectNet("ssd-mobilenet-v2", sys.argv, 0.5)
+        net = jetson.inference.detectNet(arch, sys.argv, threshold)
 
-        # create the camera and display
-        # camera = jetson.utils.gstCamera(opt.width, opt.height, opt.camera)
-        display = jetson.utils.glDisplay()
-        cam = cv2.VideoCapture(2)
-        cam2 = cv2.VideoCapture(0)
+        # Get array of classes detected by the net
+        classes = classes.classesDict
+        # List to filter detections
+        pedestrian_classes = [
+                "person",
+                "bicycle"
+        ]
+        vehicle_classes = [
+                "car",
+                "motorcycle",
+                "bus",
+                "truck",
+        ]
 
-        # process frames until user exits
+        # Get both Cameras Input
+        crosswalkCam = cv2.VideoCapture(0)
+        roadCam = cv2.VideoCapture(2)
+
+        # process frames
         while True:
-                # capture the image
-                _, frame = cam.read()
-                _, frame2 = cam2.read()
-                # frame2 = np.concatenate((frame, frame2), axis=1)
 
-                # img, width, height = camera.CaptureRGBA(zeroCopy=1)
+                # Check if get frames is available
+                if crosswalkCam.grab() and roadCam.grab():
+                        # capture the image
+                        _, crosswalkFrame = crosswalkCam.read()
+                        _, roadFrame = roadCam.read()
+                else:
+                        print("no more frames")
+                        break
+
+                # Synchronize system
                 jetson.utils.cudaDeviceSynchronize()
-                # frame = jetson.utils.cudaToNumpy(img, width, height, 4)
-                # frame = cv2.cvtColor(frame.astype(np.uint8), cv2.COLOR_RGBA2BGR)
-                # _, frame2 = cam.read()
 
-                frame2 = cv2.resize(frame2, (W, H))
-                frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2RGBA)
-                img2 = jetson.utils.cudaFromNumpy(frame2)
-                frame2 = cv2.cvtColor(frame2, cv2.COLOR_RGBA2BGR)
+                # Get Cuda Malloc to be used by the net
+                # Get processes frame to fit Cuda Malloc Size
+                crosswalkFrame, crosswalkMalloc = utils.frameToCuda(crosswalkFrame, W, H)
+                roadFrame, roadMalloc = utils.frameToCuda(roadFrame, W, H)
 
-                frame = cv2.resize(frame, (W, H))
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGBA)
-                img = jetson.utils.cudaFromNumpy(frame)
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGBA2BGR)
+                # Get detections Detectnet.Detection Object
+                pedestrianDetections = net.Detect(crosswalkMalloc, W, H, overlay)
+                vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
 
-                detections2 = net2.Detect(img2, W, H, overlay)
-                detections = net2.Detect(img, W, H, overlay)
+                # Initialize bounding boxes lists
+                ped_bboxes = []
+                veh_bboxes = []
 
+                for detection in pedestrianDetections:
+                        bbox = BBox(detection)
+                        if bbox.name in pedestrian_classes:
+                                ped_bboxes.append(bbox)
+
+                for detection in vehicleDetections:
+                        bbox = BBox(detection)
+                        if bbox.name in pedestrian_classes:
+                                veh_bboxes.append(bbox)
+
+                # print("PERSONAS: ", str(len(ped_bboxes)))
+                # print("COCHES: ", str(len(veh_bboxes)))
+
+
+
+
+                ##### SHOW #####
                 if SHOW:
 
-                        for detection in detections:
-                                start_point = (int(detection.Left), int(detection.Top))
-                                end_point = (int(detection.Right), int(detection.Bottom))
-                                print(start_point, '  ', end_point)
-                                frame = cv2.rectangle(
-                                        frame,
-                                        start_point,
-                                        end_point,
-                                        (255, 0, 0),
-                                        thickness=2)
+                        crosswalkFrame = utils.print_bboxes_to_frame(crosswalkFrame, ped_bboxes)
+                        roadFrame = utils.print_bboxes_to_frame(roadFrame, veh_bboxes)
 
-                        for detection in detections2:
-                                start_point = (int(detection.Left), int(detection.Top))
-                                end_point = (int(detection.Right), int(detection.Bottom))
-                                print(start_point, '  ', end_point)
-                                frame2 = cv2.rectangle(
-                                        frame2,
-                                        start_point,
-                                        end_point,
-                                        (255, 0, 0),
-                                        thickness=2)
 
-                        cv2.putText(frame2,
-                                    "FPS: " + str(int(net2.GetNetworkFPS())),
-                                    (5, 20),
-                                    cv2.FONT_HERSHEY_SIMPLEX,
-                                    0.5,
-                                    (0, 0, 255),
-                                    2
-                                    )
-
-                        # display.RenderOnce(img, W, H)
-                        # display.RenderOnce(img2, W, H)
-                        cv2.imshow("Infrarroja", frame)
-                        cv2.imshow("SSD Mobile Net", frame2)
+                        cv2.imshow("Crosswalk CAM", crosswalkFrame)
+                        cv2.imshow("Road CAM", roadFrame)
 
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
