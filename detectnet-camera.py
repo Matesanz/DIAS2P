@@ -24,31 +24,12 @@
 import jetson.inference
 import jetson.utils
 import cv2
-import argparse
 import sys
-import numpy as np
 
-# parse the command line
-
-
-def get_frames_and_concatenate(c0, c1):
-    _, c0_frame = c0.retrieve()
-    # c0_frame = crop_horizontal(c0_frame)
-    _, c1_frame = c1.retrieve()
-
-    print(c1_frame)
-    print(c0_frame)
-
-    # c1_frame = crop_horizontal(c1_frame)
-
-    # WE CONCATENATE BOTH IMAGES HERE
-    vis = np.concatenate((c0_frame, c1_frame), axis=1)
-
-    return vis
 
 if __name__ == "__main__":
 
-
+        SHOW = True
 
         # load the object detection network
         # net = jetson.inference.detectNet(opt.network, sys.argv, opt.threshold)
@@ -88,42 +69,44 @@ if __name__ == "__main__":
                 detections2 = net2.Detect(img2, W, H, overlay)
                 detections = net2.Detect(img, W, H, overlay)
 
-                for detection in detections:
-                        start_point = (int(detection.Left), int(detection.Top))
-                        end_point = (int(detection.Right), int(detection.Bottom))
-                        print(start_point, '  ', end_point)
-                        frame = cv2.rectangle(
-                                frame,
-                                start_point,
-                                end_point,
-                                (255, 0, 0),
-                                thickness=2)
+                if SHOW:
 
-                for detection in detections2:
-                        start_point = (int(detection.Left), int(detection.Top))
-                        end_point = (int(detection.Right), int(detection.Bottom))
-                        print(start_point, '  ', end_point)
-                        frame2 = cv2.rectangle(
-                                frame2,
-                                start_point,
-                                end_point,
-                                (255, 0, 0),
-                                thickness=2)
+                        for detection in detections:
+                                start_point = (int(detection.Left), int(detection.Top))
+                                end_point = (int(detection.Right), int(detection.Bottom))
+                                print(start_point, '  ', end_point)
+                                frame = cv2.rectangle(
+                                        frame,
+                                        start_point,
+                                        end_point,
+                                        (255, 0, 0),
+                                        thickness=2)
 
-                cv2.putText(frame2,
-                            "FPS: " + str(int(net2.GetNetworkFPS())),
-                            (5, 20),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            (0, 0, 255),
-                            2
-                            )
+                        for detection in detections2:
+                                start_point = (int(detection.Left), int(detection.Top))
+                                end_point = (int(detection.Right), int(detection.Bottom))
+                                print(start_point, '  ', end_point)
+                                frame2 = cv2.rectangle(
+                                        frame2,
+                                        start_point,
+                                        end_point,
+                                        (255, 0, 0),
+                                        thickness=2)
 
-                # display.RenderOnce(img, W, H)
-                # display.RenderOnce(img2, W, H)
-                cv2.imshow("Infrarroja", frame)
+                        cv2.putText(frame2,
+                                    "FPS: " + str(int(net2.GetNetworkFPS())),
+                                    (5, 20),
+                                    cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5,
+                                    (0, 0, 255),
+                                    2
+                                    )
 
-                cv2.imshow("SSD Mobile Net", frame2)
+                        # display.RenderOnce(img, W, H)
+                        # display.RenderOnce(img2, W, H)
+                        cv2.imshow("Infrarroja", frame)
+                        cv2.imshow("SSD Mobile Net", frame2)
+
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                         # close any open windows

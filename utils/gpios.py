@@ -17,11 +17,11 @@ def deactivate_jetson_board():
     GPIO.cleanup()
 
 
-def activate_warnings(output_pin=18):
+def warning_ON(output_pin=18):
     GPIO.output(output_pin, GPIO.HIGH)
 
 
-def deactivate_warnings(output_pin=18):
+def warning_OFF(output_pin=18):
     GPIO.output(output_pin, GPIO.LOW)
 
 
@@ -30,10 +30,10 @@ if __name__ == '__main__':
     try:
         while True:
             print('warnings activated')
-            activate_warnings()
+            warning_ON()
             time.sleep(2)
             print('warnings OFF')
-            deactivate_warnings()
+            warning_OFF()
             time.sleep(2)
     finally:
         deactivate_jetson_board()
