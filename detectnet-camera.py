@@ -26,15 +26,17 @@ import jetson.utils
 import cv2
 import sys
 
-from utils import utils, classes
+from utils import utils, classes, gpios
 from trackers.bboxssd import BBox
-
+from trackers.bboxssdtracker import BBoxTracker
 
 if __name__ == "__main__":
 
         # Show live results
         # when production set this to False as it consume resources
         SHOW = True
+        VIDEO = True
+        total_frame= 0
 
         # load the object detection network
         arch = "ssd-mobilenet-v2"
@@ -57,12 +59,30 @@ if __name__ == "__main__":
                 "truck",
         ]
 
+        #Initialize Trackers
+        ped_tracker = BBoxTracker(50)
+        veh_tracker = BBoxTracker(15)
+
+        # Activate Board
+        gpios.activate_jetson_board()
+
+
+        VIDEO_PATH = "./Crosswalk.mp4"
         # Get both Cameras Input
-        crosswalkCam = cv2.VideoCapture(0)
-        roadCam = cv2.VideoCapture(2)
+        if VIDEO:
+                print('[*] Starting video...')
+                crosswalkCam = cv2.VideoCapture(VIDEO_PATH)
+                roadCam = cv2.VideoCapture(VIDEO_PATH)
+        else:
+                # Set video source from camera
+                print('[*] Starting camera...')
+                crosswalkCam = cv2.VideoCapture(0)
+                roadCam = cv2.VideoCapture(2)
 
         # process frames
         while True:
+                # print("TOTAL FRAME: ", total_frame)
+                # total_frame += 1
 
                 # Check if get frames is available
                 if crosswalkCam.grab() and roadCam.grab():
@@ -89,34 +109,56 @@ if __name__ == "__main__":
                 ped_bboxes = []
                 veh_bboxes = []
 
+                # Convert Crosswalk Detections to Bbox object
+                # filter detections if recognised as pedestrians
+                # add to pedestrian list of bboxes
                 for detection in pedestrianDetections:
                         bbox = BBox(detection)
                         if bbox.name in pedestrian_classes:
                                 ped_bboxes.append(bbox)
 
+                # Convert Road Detections to Bbox object
+                # filter detections if recognised as vehicles
+                # add to vehicle list of bboxes
                 for detection in vehicleDetections:
                         bbox = BBox(detection)
-                        if bbox.name in pedestrian_classes:
+                        if bbox.name in vehicle_classes:
                                 veh_bboxes.append(bbox)
 
-                # print("PERSONAS: ", str(len(ped_bboxes)))
-                # print("COCHES: ", str(len(veh_bboxes)))
+                # Relate previous detections to new ones
+                # updating trackers
+                pedestrians = ped_tracker.update(ped_bboxes)
+                vehicles = veh_tracker.update(veh_bboxes)
 
+                ##### SECURITY #####
 
+                veh_move = utils.is_any_item_moving(vehicles)
+                people_detected = len(pedestrians)
+                if veh_move and people_detected:
+                        # Security actions Here
+                        gpios.warning_ON()
+
+                else:
+                        # Deactivate security actions here
+                        gpios.warning_OFF()
 
 
                 ##### SHOW #####
                 if SHOW:
+                        # Print square detections into frame
+                        crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestrians)
+                        roadFrame = utils.print_items_to_frame(roadFrame, vehicles)
 
-                        crosswalkFrame = utils.print_bboxes_to_frame(crosswalkFrame, ped_bboxes)
-                        roadFrame = utils.print_bboxes_to_frame(roadFrame, veh_bboxes)
-
-
+                        # Show the frame
                         cv2.imshow("Crosswalk CAM", crosswalkFrame)
                         cv2.imshow("Road CAM", roadFrame)
 
-                key = cv2.waitKey(1) & 0xFF
+                ###### END ####
+                # Quit program pressing 'Q'
+                key = cv2.waitKey(0) & 0xFF
                 if key == ord("q"):
+                        # free GPIOs before quit
+                        gpios.deactivate_jetson_board()
                         # close any open windows
                         cv2.destroyAllWindows()
                         break

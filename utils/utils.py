@@ -49,6 +49,46 @@ def get_trackable_objects_from_detections(detections):
 
 #############################################################################
 
+def is_any_item_moving(items):
+
+        item_status_list = []
+        for k, veh in items.items():
+                item_status_list.append(veh.status)
+
+        if 'move' in item_status_list:
+                return True
+
+        return False
+
+def print_items_to_frame(frame, items):
+
+        fr = frame
+
+        for (k, v) in items.items():
+                ids = k
+                bbox = v
+
+                fr = cv2.rectangle(
+                        fr,
+                        bbox.start_point,
+                        bbox.end_point,
+                        bbox.color,
+                        2)
+
+                cv2.putText(
+                        fr,
+                        bbox.name + ': ' + str(ids) + ': ' + bbox.status,
+                        # + str(bbox.dx) + ' ' + str(bbox.dy) ,
+                        # + ': ' + str(bbox.name),
+                        bbox.start_point,
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        1,
+                        bbox.color,
+                        2
+                )
+
+        return fr
+
 def print_bboxes_to_frame(frame, bboxes):
 
         fr = frame
