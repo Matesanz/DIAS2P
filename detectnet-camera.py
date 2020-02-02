@@ -68,7 +68,7 @@ if __name__ == "__main__":
         gpios.activate_jetson_board()
 
 
-        VIDEO_PATH = "./Crosswalk.mp4.mp4"
+        VIDEO_PATH = "./Crosswalk.mp4"
         # Get both Cameras Input
         if VIDEO:
                 print('[*] Starting video...')
