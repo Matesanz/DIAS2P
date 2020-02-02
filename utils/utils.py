@@ -49,6 +49,23 @@ def get_trackable_objects_from_detections(detections):
 
 #############################################################################
 
+def print_fps(frame, fps):
+
+        fr = frame
+        cv2.putText(
+                fr,
+                "FPS: " + str(fps),
+                # + str(bbox.dx) + ' ' + str(bbox.dy) ,
+                # + ': ' + str(bbox.name),
+                (650, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (255,0,0),
+                2
+        )
+
+        return fr
+
 def is_any_item_moving(items):
 
         item_status_list = []

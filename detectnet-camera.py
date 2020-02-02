@@ -25,6 +25,7 @@ import jetson.inference
 import jetson.utils
 import cv2
 import sys
+import time
 
 from utils import utils, classes, gpios
 from trackers.bboxssd import BBox
@@ -67,7 +68,7 @@ if __name__ == "__main__":
         gpios.activate_jetson_board()
 
 
-        VIDEO_PATH = "./Crosswalk.mp4"
+        VIDEO_PATH = "./Crosswalk.mp4.mp4"
         # Get both Cameras Input
         if VIDEO:
                 print('[*] Starting video...')
@@ -83,8 +84,9 @@ if __name__ == "__main__":
         while True:
                 # print("TOTAL FRAME: ", total_frame)
                 # total_frame += 1
+                start_time = time.time()  # start time of the loop
 
-                # Check if get frames is available
+                # Check if more frames are available
                 if crosswalkCam.grab() and roadCam.grab():
                         # capture the image
                         _, crosswalkFrame = crosswalkCam.read()
@@ -136,28 +138,31 @@ if __name__ == "__main__":
                 people_detected = len(pedestrians)
                 if veh_move and people_detected:
                         # Security actions Here
+                        print("SECURITY ON")
                         gpios.warning_ON()
 
                 else:
                         # Deactivate security actions here
                         gpios.warning_OFF()
-
+                        print("SECURITY OFF")
 
                 ##### SHOW #####
+                fps = 1.0 / (time.time() - start_time)
                 if SHOW:
                         # Print square detections into frame
                         crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestrians)
                         roadFrame = utils.print_items_to_frame(roadFrame, vehicles)
-
+                        roadFrame = utils.print_fps(roadFrame, fps)
                         # Show the frame
                         cv2.imshow("Crosswalk CAM", crosswalkFrame)
                         cv2.imshow("Road CAM", roadFrame)
 
                 ###### END ####
                 # Quit program pressing 'Q'
-                key = cv2.waitKey(0) & 0xFF
+                key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                         # free GPIOs before quit
+                        gpios.warning_OFF()
                         gpios.deactivate_jetson_board()
                         # close any open windows
                         cv2.destroyAllWindows()
