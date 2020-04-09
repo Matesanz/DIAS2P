@@ -172,7 +172,7 @@ if __name__ == "__main__":
                 veh_move = utils.is_any_item_moving(vehicles)
                 people_detected = len(pedestrians)
 
-                 if veh_move and people_detected:
+                if veh_move and people_detected:
                         # Security actions Here
                         cv2. rectangle(crosswalkFrame, (0,0), (200,200), (255,255,255), -1)
                         if is_jetson:
