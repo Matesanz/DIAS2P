@@ -37,7 +37,7 @@ if __name__ == "__main__":
         # when production set this to False as it consume resources
         SHOW = True
         VIDEO = True
-        total_frame= 0
+        total_frame = 0
 
         # load the object detection network
         arch = "ssd-mobilenet-v2"
@@ -60,52 +60,84 @@ if __name__ == "__main__":
                 "truck",
         ]
 
-        #Initialize Trackers
-        ped_tracker = BBoxTracker(50)
+        # Initialize Trackers
+        ped_tracker = BBoxTracker(15)
         veh_tracker = BBoxTracker(15)
 
+        # check if running on jetson
+        is_jetson = utils.is_jetson_platform()
         # Activate Board
-        gpios.activate_jetson_board()
+        if is_jetson: gpios.activate_jetson_board()
 
-
-        VIDEO_PATH = "./Crosswalk.mp4"
+        VIDEO_PATH = "video/cross_uma_02.webm"
+        VIDEO_PATH2 = "video/car_uma_01.webm"
         # Get both Cameras Input
         if VIDEO:
                 print('[*] Starting video...')
                 crosswalkCam = cv2.VideoCapture(VIDEO_PATH)
-                roadCam = cv2.VideoCapture(VIDEO_PATH)
+                roadCam = cv2.VideoCapture(VIDEO_PATH2)
+                # Override initial width and height
+                W = int(crosswalkCam.get(3))  # float
+                H = int(crosswalkCam.get(4))  # float
+
+        elif is_jetson:
+
+                print('[*] Starting camera...')
+                crosswalkCam = jetson.utils.gstCamera(W, H, "dev/video0")
+                roadCam = jetson.utils.gstCamera(W, H, "dev/video1")
+
         else:
                 # Set video source from camera
                 print('[*] Starting camera...')
                 crosswalkCam = cv2.VideoCapture(0)
-                roadCam = cv2.VideoCapture(2)
+                roadCam = cv2.VideoCapture(1)
+                # Override initial width and height
+                W = int(crosswalkCam.get(3))  # float
+                H = int(crosswalkCam.get(4))  # float
+
+
+        # Get ROIs from cross and road cam
+        crossContour = utils.select_points_in_frame(crosswalkCam, 5)
+        roadContour = utils.select_points_in_frame(roadCam)
 
         # process frames
         while True:
                 # print("TOTAL FRAME: ", total_frame)
                 # total_frame += 1
                 start_time = time.time()  # start time of the loop
+                # time.sleep(0.05)
+                # if we are on Jetson use jetson inference
+                if is_jetson:
 
-                # Check if more frames are available
-                if crosswalkCam.grab() and roadCam.grab():
-                        # capture the image
-                        _, crosswalkFrame = crosswalkCam.read()
-                        _, roadFrame = roadCam.read()
+                        # get frame from crosswalk and detect
+                        crosswalkMalloc, _, _ = crosswalkCam.CaptureRGBA()
+                        pedestrianDetections = net.Detect(crosswalkMalloc, W, H, overlay)
+                        # get frame from road and detect
+                        roadMalloc, _, _ = roadCam.CaptureRGBA()
+                        vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
+
+                # If we are not on jetson use CV2
                 else:
-                        print("no more frames")
-                        break
+                        # Check if more frames are available
+                        if crosswalkCam.grab() and roadCam.grab():
+                                # capture the image
+                                _, crosswalkFrame = crosswalkCam.read()
+                                _, roadFrame = roadCam.read()
+                        else:
+                                print("no more frames")
+                                break
 
-                # Synchronize system
-                jetson.utils.cudaDeviceSynchronize()
+                        # Synchronize system
+                        jetson.utils.cudaDeviceSynchronize()
 
-                # Get Cuda Malloc to be used by the net
-                # Get processes frame to fit Cuda Malloc Size
-                crosswalkFrame, crosswalkMalloc = utils.frameToCuda(crosswalkFrame, W, H)
-                roadFrame, roadMalloc = utils.frameToCuda(roadFrame, W, H)
+                        # Get Cuda Malloc to be used by the net
+                        # Get processes frame to fit Cuda Malloc Size
+                        crosswalkFrame, crosswalkMalloc = utils.frameToCuda(crosswalkFrame, W, H)
+                        roadFrame, roadMalloc = utils.frameToCuda(roadFrame, W, H)
 
-                # Get detections Detectnet.Detection Object
-                pedestrianDetections = net.Detect(crosswalkMalloc, W, H, overlay)
-                vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
+                        # Get detections Detectnet.Detection Object
+                        pedestrianDetections = net.Detect(crosswalkMalloc, W, H, overlay)
+                        vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
 
                 # Initialize bounding boxes lists
                 ped_bboxes = []
@@ -116,7 +148,8 @@ if __name__ == "__main__":
                 # add to pedestrian list of bboxes
                 for detection in pedestrianDetections:
                         bbox = BBox(detection)
-                        if bbox.name in pedestrian_classes:
+                        is_bbox_in_contour = utils.is_point_in_contour(crossContour, bbox.center)
+                        if bbox.name in pedestrian_classes and is_bbox_in_contour:
                                 ped_bboxes.append(bbox)
 
                 # Convert Road Detections to Bbox object
@@ -124,7 +157,9 @@ if __name__ == "__main__":
                 # add to vehicle list of bboxes
                 for detection in vehicleDetections:
                         bbox = BBox(detection)
-                        if bbox.name in vehicle_classes:
+                        is_bbox_in_contour = utils.is_point_in_contour(roadContour, bbox.center)
+                        print(is_bbox_in_contour)
+                        if bbox.name in vehicle_classes and is_bbox_in_contour:
                                 veh_bboxes.append(bbox)
 
                 # Relate previous detections to new ones
@@ -136,19 +171,26 @@ if __name__ == "__main__":
 
                 veh_move = utils.is_any_item_moving(vehicles)
                 people_detected = len(pedestrians)
-                if veh_move and people_detected:
+
+                # if veh_move and people_detected:
                         # Security actions Here
-                        print("SECURITY ON")
-                        gpios.warning_ON()
+                        cv2. rectangle(crosswalkFrame, (0,0), (200,200), (255,255,255), -1)
+                        if is_jetson:
+                                gpios.warning_ON()
 
                 else:
                         # Deactivate security actions here
-                        gpios.warning_OFF()
                         print("SECURITY OFF")
+                        if is_jetson:
+                                gpios.warning_OFF()
 
                 ##### SHOW #####
                 fps = 1.0 / (time.time() - start_time)
-                if SHOW:
+                if SHOW and not is_jetson:
+
+                        # print contour
+                        utils.drawContour(roadFrame, roadContour)
+                        utils.drawContour(crosswalkFrame, crossContour)
                         # Print square detections into frame
                         crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestrians)
                         roadFrame = utils.print_items_to_frame(roadFrame, vehicles)
@@ -159,11 +201,12 @@ if __name__ == "__main__":
 
                 ###### END ####
                 # Quit program pressing 'Q'
-                key = cv2.waitKey(1) & 0xFF
+                key = cv2.waitKey(0) & 0xFF
                 if key == ord("q"):
                         # free GPIOs before quit
-                        gpios.warning_OFF()
-                        gpios.deactivate_jetson_board()
+                        if is_jetson:
+                                gpios.warning_OFF()
+                                gpios.deactivate_jetson_board()
                         # close any open windows
                         cv2.destroyAllWindows()
                         break

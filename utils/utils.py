@@ -1,25 +1,20 @@
 # load yolov3 model and perform object detection
 # based on https://github.com/experiencor/keras-yolo3
 import jetson.utils
-
-from scipy.spatial import distance
-import numpy as np
-from numpy import expand_dims
-from keras.models import load_model
-from keras.preprocessing.image import load_img
-from keras.preprocessing.image import img_to_array
-from matplotlib import pyplot
-from matplotlib.patches import Rectangle
-import cv2
-from imageai.Detection import ObjectDetection
+import platform
 from collections import OrderedDict
+from numpy import array, zeros, uint8
+import cv2
+import numpy as np
+from imageai.Detection import ObjectDetection
 from scipy.optimize import linear_sum_assignment
+from scipy.spatial import distance
 
 
-def get_trackable_objects_from_detections(detections):
-        trackable_objects = []
-        for detection in detections[1]:
-                trackable_object = trackable_object()
+# def get_trackable_objects_from_detections(detections):
+#         trackable_objects = []
+#         for detection in detections[1]:
+#                 trackable_object = trackable_object()
 
 
 ##################################
@@ -49,8 +44,133 @@ def get_trackable_objects_from_detections(detections):
 
 #############################################################################
 
-def print_fps(frame, fps):
 
+
+def drawContour(image, contour):
+        # Iterate over points in contour
+        for idx, point in enumerate(contour):
+                # Get previous point on iterable
+                previous_point = contour[idx - 1]
+                # Draw line between the points
+                image = cv2.line(image, tuple(previous_point), tuple(point), (0, 0, 0), 1)
+
+
+def is_point_in_contour(contour, point):
+        # +1, -1, or 0  point is inside, outside, or on the contour, respectively
+        is_point_inside_box = cv2.pointPolygonTest(contour, point, False) > 0
+        # print(point)
+        return is_point_inside_box
+
+
+def select_points_in_frame(cam, point_nb=4):
+        # Sanity Check: need min 3 points to make contour
+        if point_nb < 3:
+                raise Exception('Minimum point required is 3, got', point_nb)
+
+        # Initialize points list
+        points = []
+
+        # Set params to call left_click()
+        params = [points, point_nb]
+
+        # Read frame of cam
+        _, first_frame = cam.read()
+        # Make copy
+        clean_frame = first_frame.copy()
+
+        # Name frame of cam
+        cv2.namedWindow("first_frame")
+
+        # Call Mouse Function to get points on frame
+        cv2.setMouseCallback("first_frame", left_click, params)
+
+        # Get width and height of frame
+        width = int(cam.get(3))  # float
+        height = int(cam.get(4))  # float
+
+        while True:
+
+                # Add instructions
+                instructions = [
+                        "Select " + str(point_nb) + " points in frame",
+                        "Remaining points: " + str(point_nb - len(points)),
+                        "Press 'c' to clear"
+                ]
+
+                # Add DONE when no points remaining
+                if len(points) == point_nb: instructions.append("DONE, press 'q'")
+
+                for idx, ins in enumerate(instructions):
+                        cv2.putText(first_frame, ins, (20, 30 * (idx + 1)), cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 0, 0), 2)
+
+                # Show Frame
+                cv2.imshow("first_frame", first_frame)
+
+                # Wait for any key to be pressed
+                key = cv2.waitKey(1) & 0xFF
+
+                # Clean frame to draw points
+                first_frame = clean_frame.copy()
+
+                # For every chosen point
+                for idx, point in enumerate(points):
+
+                        # Show point on frame
+                        cv2.circle(first_frame, tuple(point), 1, (255, 0, 0), 2)
+
+                        # draw lines connecting points
+                        if len(points) > 1:
+                                # Get previous point on iterable
+                                previous_point = points[idx - 1]
+                                # Draw line between the points
+                                cv2.line(first_frame, tuple(previous_point), tuple(point), (0, 0, 0), 1)
+
+                # If press 'c' restart selected points
+                if key == ord("c"):
+                        # Read frame of cam
+                        _, first_frame = cam.read()
+                        # Make copy
+                        clean_frame = first_frame.copy()
+                        # Reset points list
+                        points = []
+                        # Set params to call left_click()
+                        params = [points, point_nb]
+                        # Call Mouse Function to get points on frame
+                        cv2.setMouseCallback("first_frame", left_click, params)
+
+                # If press 'q' try to finish selection
+                if key == ord("q"):
+
+                        # if number of points is covered return contour
+                        if len(points) == point_nb:
+                                cv2.destroyWindow("first_frame")
+                                return array(points)
+
+                        # else show warning
+                        else:
+                                print("NO HAY SUFICIENTES PUNTOS")
+                                print("QUEDAN:", point_nb - len(points))
+
+
+def left_click(event, x, y, flags, param):
+        # Returns selected points in mouse callback
+        # params expected: [0] list of points [1] max points
+        points = param[0]
+        limit_of_points = param[1]
+
+        # Check if maximum points reached
+        allow_selection = len(points) < limit_of_points
+
+        # On double click get append coordinates
+        if event == cv2.EVENT_LBUTTONDBLCLK and allow_selection:
+                points.append([x, y])
+
+
+def is_jetson_platform():
+        return platform.processor() != "x86_64"
+
+
+def print_fps(frame, fps):
         fr = frame
         cv2.putText(
                 fr,
@@ -60,14 +180,14 @@ def print_fps(frame, fps):
                 (650, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
-                (255,0,0),
+                (255, 0, 0),
                 2
         )
 
         return fr
 
-def is_any_item_moving(items):
 
+def is_any_item_moving(items):
         item_status_list = []
         for k, veh in items.items():
                 item_status_list.append(veh.status)
@@ -77,8 +197,8 @@ def is_any_item_moving(items):
 
         return False
 
-def print_items_to_frame(frame, items):
 
+def print_items_to_frame(frame, items):
         fr = frame
 
         for (k, v) in items.items():
@@ -94,7 +214,7 @@ def print_items_to_frame(frame, items):
 
                 cv2.putText(
                         fr,
-                        bbox.name + ': ' + str(ids) + ': ' + bbox.status,
+                        str(ids) + ': ' + bbox.mov[1] ,
                         # + str(bbox.dx) + ' ' + str(bbox.dy) ,
                         # + ': ' + str(bbox.name),
                         bbox.start_point,
@@ -106,8 +226,8 @@ def print_items_to_frame(frame, items):
 
         return fr
 
-def print_bboxes_to_frame(frame, bboxes):
 
+def print_bboxes_to_frame(frame, bboxes):
         fr = frame
 
         for bbox in bboxes:
@@ -134,6 +254,8 @@ def print_bboxes_to_frame(frame, bboxes):
 
 def frameToCuda(frame, width, height):
         # converts cv2 frame to Cuda Malloc
+        # Resize is neccesary just if video input has different
+        # shape from camera input
         fr = cv2.resize(frame, (width, height))
         fr = cv2.cvtColor(fr, cv2.COLOR_BGR2RGBA)
         cuda_malloc = jetson.utils.cudaFromNumpy(fr)

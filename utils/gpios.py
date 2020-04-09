@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
+from utils.utils import is_jetson_platform
 
-import Jetson.GPIO as GPIO
+if is_jetson_platform():
+    import Jetson.GPIO as GPIO
 import time
 
 

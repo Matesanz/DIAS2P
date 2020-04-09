@@ -19,7 +19,7 @@ if __name__ == "__main__":
         activate_jetson_board()
 
         VIDEO = True
-        VIDEO_PATH = "./Crosswalk.mp4"
+        VIDEO_PATH = "video/Crosswalk.mp4"
         # Video / Camera
         if VIDEO:
                 print('[*] Starting video...')
