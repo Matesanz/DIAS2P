@@ -61,7 +61,8 @@ if __name__ == "__main__":
         ]
 
         # Initialize Trackers
-        ped_tracker = BBoxTracker(15)
+        ped_tracker_up = BBoxTracker(15)
+        ped_tracker_down = BBoxTracker(15)
         veh_tracker = BBoxTracker(15)
 
         # check if running on jetson
@@ -97,7 +98,8 @@ if __name__ == "__main__":
 
 
         # Get ROIs from cross and road cam
-        crossContour = utils.select_points_in_frame(crosswalkCam, 5)
+        crossContourUp = utils.select_points_in_frame(crosswalkCam, 5)
+        crossContourDown = utils.select_points_in_frame(crosswalkCam, 5)
         roadContour = utils.select_points_in_frame(roadCam)
 
         # process frames
@@ -140,7 +142,10 @@ if __name__ == "__main__":
                         vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
 
                 # Initialize bounding boxes lists
-                ped_bboxes = []
+
+                ped_up_bboxes = []
+                ped_down_bboxes = []
+
                 veh_bboxes = []
 
                 # Convert Crosswalk Detections to Bbox object
@@ -148,9 +153,11 @@ if __name__ == "__main__":
                 # add to pedestrian list of bboxes
                 for detection in pedestrianDetections:
                         bbox = BBox(detection)
-                        is_bbox_in_contour = utils.is_point_in_contour(crossContour, bbox.center)
-                        if bbox.name in pedestrian_classes and is_bbox_in_contour:
-                                ped_bboxes.append(bbox)
+                        if bbox.name in pedestrian_classes:
+                                if utils.is_point_in_contour(crossContourUp, bbox.center):
+                                        ped_up_bboxes.append(bbox)
+                                if utils.is_point_in_contour(crossContourDown, bbox.center):
+                                        ped_down_bboxes.append(bbox)
 
                 # Convert Road Detections to Bbox object
                 # filter detections if recognised as vehicles
@@ -158,21 +165,25 @@ if __name__ == "__main__":
                 for detection in vehicleDetections:
                         bbox = BBox(detection)
                         is_bbox_in_contour = utils.is_point_in_contour(roadContour, bbox.center)
-                        print(is_bbox_in_contour)
                         if bbox.name in vehicle_classes and is_bbox_in_contour:
                                 veh_bboxes.append(bbox)
 
                 # Relate previous detections to new ones
                 # updating trackers
-                pedestrians = ped_tracker.update(ped_bboxes)
+                pedestriansUp = ped_tracker_up.update(ped_up_bboxes)
+                pedestriansDown = ped_tracker_down.update(ped_down_bboxes)
+
+                print('PEDESTRIANS UP', pedestriansUp)
+                print('PEDESTRIANS DOWN', pedestriansDown)
+
                 vehicles = veh_tracker.update(veh_bboxes)
 
                 ##### SECURITY #####
 
-                veh_move = utils.is_any_item_moving(vehicles)
-                people_detected = len(pedestrians)
+                ped_up_crossing = utils.is_any_bbox_moving_in_direction(pedestriansUp.values(), 'down')
+                ped_down_crossing = utils.is_any_bbox_moving_in_direction(pedestriansDown.values(), 'up')
 
-                if veh_move and people_detected:
+                if ped_up_crossing or ped_down_crossing:
                         # Security actions Here
                         cv2. rectangle(crosswalkFrame, (0,0), (200,200), (255,255,255), -1)
                         if is_jetson:
@@ -190,9 +201,13 @@ if __name__ == "__main__":
 
                         # print contour
                         utils.drawContour(roadFrame, roadContour)
-                        utils.drawContour(crosswalkFrame, crossContour)
+                        utils.drawContour(crosswalkFrame, crossContourUp)
+                        utils.drawContour(crosswalkFrame, crossContourDown)
+
                         # Print square detections into frame
-                        crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestrians)
+                        crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestriansUp)
+                        crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestriansDown)
+
                         roadFrame = utils.print_items_to_frame(roadFrame, vehicles)
                         roadFrame = utils.print_fps(roadFrame, fps)
                         # Show the frame

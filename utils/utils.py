@@ -45,7 +45,6 @@ from scipy.spatial import distance
 #############################################################################
 
 
-
 def drawContour(image, contour):
         # Iterate over points in contour
         for idx, point in enumerate(contour):
@@ -187,13 +186,41 @@ def print_fps(frame, fps):
         return fr
 
 
-def is_any_item_moving(items):
-        item_status_list = []
-        for k, veh in items.items():
-                item_status_list.append(veh.status)
+def is_any_pedestrian_crossing(pedestrians, crossContourUp, crossContourDown):
+        for ped in pedestrians:
+                is_bbox_in_contour_up = is_point_in_contour(crossContourUp, ped.center)
+                is_ped_moving_down = is_bbox_moving_in_direction(ped, 'down')
+                if is_bbox_in_contour_up and is_ped_moving_down:
+                        return True
+                is_bbox_in_contour_down = is_point_in_contour(crossContourDown, ped.center)
+                is_ped_moving_up = is_bbox_moving_in_direction(ped, 'up')
+                if is_bbox_in_contour_down and is_ped_moving_up:
+                        return True
 
-        if 'move' in item_status_list:
+        return False
+
+
+def is_bbox_moving_in_direction(bbox, direction):
+        if direction in bbox.mov:
                 return True
+
+        return False
+
+
+def is_any_bbox_moving_in_direction(bboxes, direction):
+        for bbox in bboxes:
+                if direction in bbox.mov:
+                        return True
+
+        return False
+
+
+def is_any_item_moving(items):
+        for _, bbox in items.items():
+                if bbox.status == 'move':
+                        return True
+
+        return False
 
         return False
 
@@ -214,7 +241,7 @@ def print_items_to_frame(frame, items):
 
                 cv2.putText(
                         fr,
-                        str(ids) + ': ' + bbox.mov[1] ,
+                        str(ids) + ': ' + bbox.mov[1],
                         # + str(bbox.dx) + ' ' + str(bbox.dy) ,
                         # + ': ' + str(bbox.name),
                         bbox.start_point,
