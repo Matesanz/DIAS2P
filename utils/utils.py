@@ -9,6 +9,8 @@ import numpy as np
 from imageai.Detection import ObjectDetection
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial import distance
+from os import path, mkdir
+from numpy import save, load
 
 
 # def get_trackable_objects_from_detections(detections):
@@ -61,10 +63,47 @@ def is_point_in_contour(contour, point):
         return is_point_inside_box
 
 
-def select_points_in_frame(cam, point_nb=4):
+def save_contour(contour, name):
+        folder = 'resources'
+        contour_name = name + '.npy'
+        contour_path = folder + '/' + contour_name
+        save(contour_path, contour)
+        print("Contour Guardado!")
+
+
+def load_contour(name):
+        folder = 'resources'
+        contour_name = name + '.npy'
+        contour_path = folder + '/' + contour_name
+
+        if not path.isfile(contour_path):
+                raise Exception(
+                        "No existe ningún contour con el nombre {} en la carpeta {}"\
+                                .format(contour_name, folder)
+                )
+
+        contour = load(contour_path)
+        return contour
+
+
+def contour_exists(name):
+        folder = 'resources'
+        contour_name = name + '.npy'
+        contour_path = folder + '/' + contour_name
+
+        if not path.isfile(contour_path):
+                return False
+
+        return True
+
+
+def select_points_in_frame(cam, name, point_nb=4):
         # Sanity Check: need min 3 points to make contour
         if point_nb < 3:
                 raise Exception('Minimum point required is 3, got', point_nb)
+
+        # Check if contour is stored
+        is_contour_stored = contour_exists(name)
 
         # Initialize points list
         points = []
@@ -96,6 +135,9 @@ def select_points_in_frame(cam, point_nb=4):
                         "Press 'c' to clear"
                 ]
 
+                # Ask to load stored contour
+                if is_contour_stored: instructions.append("press 'l' to load")
+
                 # Add DONE when no points remaining
                 if len(points) == point_nb: instructions.append("DONE, press 'q'")
 
@@ -124,6 +166,12 @@ def select_points_in_frame(cam, point_nb=4):
                                 # Draw line between the points
                                 cv2.line(first_frame, tuple(previous_point), tuple(point), (0, 0, 0), 1)
 
+                # If press 'l' load stored contour
+                if key == ord('l'):
+                        contour = load_contour(name)
+                        cv2.destroyWindow("first_frame")
+                        return contour
+
                 # If press 'c' restart selected points
                 if key == ord("c"):
                         # Read frame of cam
@@ -143,7 +191,9 @@ def select_points_in_frame(cam, point_nb=4):
                         # if number of points is covered return contour
                         if len(points) == point_nb:
                                 cv2.destroyWindow("first_frame")
-                                return array(points)
+                                contour = array(points)
+                                save_contour(points, name)
+                                return contour
 
                         # else show warning
                         else:
@@ -209,7 +259,13 @@ def is_bbox_moving_in_direction(bbox, direction):
 
 def is_any_bbox_moving_in_direction(bboxes, direction):
         for bbox in bboxes:
-                if direction in bbox.mov:
+                # Coef is a measure of movement
+                # If Coef is high it means object is traversing fast
+                # in x direction: Which is normal in cars.
+                # Thus help avoiding fake positives
+                coef = 0
+                if bbox.dy != 0: coef = abs(bbox.dx / bbox.dy)
+                if coef < 10 and direction in bbox.mov:
                         return True
 
         return False

@@ -42,7 +42,7 @@ if __name__ == "__main__":
         # load the object detection network
         arch = "ssd-mobilenet-v2"
         overlay = "box,labels,conf"
-        threshold = 0.5
+        threshold = 0.7
         W, H = (800, 480)
         net = jetson.inference.detectNet(arch, sys.argv, threshold)
 
@@ -98,9 +98,10 @@ if __name__ == "__main__":
 
 
         # Get ROIs from cross and road cam
-        crossContourUp = utils.select_points_in_frame(crosswalkCam, 5)
-        crossContourDown = utils.select_points_in_frame(crosswalkCam, 5)
-        roadContour = utils.select_points_in_frame(roadCam)
+        crossContourUp = utils.select_points_in_frame(crosswalkCam, 'crossContourUp')
+        crossContourDown = utils.select_points_in_frame(crosswalkCam, 'crossContourDown')
+        roadContour = utils.select_points_in_frame(roadCam, 'roadContour')
+
 
         # process frames
         while True:
@@ -172,9 +173,6 @@ if __name__ == "__main__":
                 # updating trackers
                 pedestriansUp = ped_tracker_up.update(ped_up_bboxes)
                 pedestriansDown = ped_tracker_down.update(ped_down_bboxes)
-
-                print('PEDESTRIANS UP', pedestriansUp)
-                print('PEDESTRIANS DOWN', pedestriansDown)
 
                 vehicles = veh_tracker.update(veh_bboxes)
 
