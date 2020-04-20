@@ -46,6 +46,11 @@ from numpy import save, load
 
 #############################################################################
 
+def security_ON():
+        print("[*] SECURITY ON [*]")
+
+def security_OFF():
+        print("[#] SECURITY OFF [#]")
 
 def drawContour(image, contour):
         # Iterate over points in contour
@@ -223,10 +228,10 @@ def print_fps(frame, fps):
         fr = frame
         cv2.putText(
                 fr,
-                "FPS: " + str(fps),
+                "FPS: " + str(round(fps, 2)),
                 # + str(bbox.dx) + ' ' + str(bbox.dy) ,
                 # + ': ' + str(bbox.name),
-                (650, 30),
+                (30, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 1,
                 (255, 0, 0),
