@@ -12,6 +12,8 @@ from scipy.optimize import linear_sum_assignment
 from scipy.spatial import distance
 from os import path, mkdir
 from numpy import save, load
+from tabulate import tabulate
+import curses
 
 
 # def get_trackable_objects_from_detections(detections):
@@ -47,13 +49,45 @@ from numpy import save, load
 
 #############################################################################
 
+class ConsoleParams:
+        
+        system: str
+        fps: float
+        warnings: bool = False
+
+
+def print_console(console, params: ConsoleParams):
+        fps = round(params.fps, 2)
+        
+        if params.warnings:
+                warnings = 'ON'
+        else:
+                warnings = "OFF"
+
+        system = params.system
+        template = tabulate(
+                [
+                        ["WARNINGS:", warnings],
+                        ["FPS:", str(fps)]
+                ]
+        )
+        
+        console.clear()
+        console.addstr(system + '\n')
+        console.addstr(template + '\n')
+                
+        console.refresh()
+
+
+
 def security_ON():
-        stdout.write("\r{0}>".format("[*] Warnings State: ON "))
-        stdout.flush()
+        # stdout.write("\r{0}>".format("[*] Warnings State: ON "))
+        # stdout.flush()
+        pass
 
 def security_OFF():
-        stdout.write("\r{0}>".format("[*] Warnings State: OFF"))
-        stdout.flush()
+        pass
+        # stdout.write("\r{0}>".format("[*] Warnings State: OFF"))
 
 def drawContour(image, contour):
         # Iterate over points in contour
@@ -227,7 +261,10 @@ def is_jetson_platform():
         return platform.processor() != "x86_64"
 
 
-def print_fps(frame, fps):
+def print_fps_on_terminal(fps):
+        stdout.write("\r{0} {1}>".format("[*] fps", fps))
+
+def print_fps_on_frame(frame, fps):
         fr = frame
         cv2.putText(
                 fr,

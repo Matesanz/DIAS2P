@@ -31,22 +31,27 @@ from threading import Timer
 from utils import utils, classes, gpios, cameras
 from trackers.bboxssd import BBox
 from trackers.bboxssdtracker import BBoxTracker
-
+import platform
+import curses
 
 if __name__ == "__main__":
     
     # Show live results
     # when production set this to False as it consume resources
-    SHOW = True
+    SHOW = False
     VIDEO = True
-    total_frame = 0
-    
+
     # load the object detection network
     arch = "ssd-mobilenet-v2"
     overlay = "box,labels,conf"
     threshold = 0.7
     W, H = (800, 480)
     net = jetson.inference.detectNet(arch, sys.argv, threshold)
+    
+    # Start printing console
+    console = curses.initscr()
+    consoleConfig = utils.ConsoleParams()
+    consoleConfig.system = platform.system()
     
     # Get array of classes detected by the net
     classes = classes.classesDict
@@ -120,10 +125,9 @@ if __name__ == "__main__":
     
     # process frames
     while True:
-        # print("TOTAL FRAME: ", total_frame)
-        # total_frame += 1
+
         start_time = time.time()  # start time of the loop
-        # time.sleep(0.05)
+
         # if we are on Jetson use jetson inference
         if is_jetson:
             
@@ -152,6 +156,7 @@ if __name__ == "__main__":
             # Get processes frame to fit Cuda Malloc Size
             crosswalkFrame, crosswalkMalloc = utils.frameToCuda(crosswalkFrame, W, H)
             roadFrame, roadMalloc = utils.frameToCuda(roadFrame, W, H)
+            
             
             # Get detections Detectnet.Detection Object
             pedestrianDetections = net.Detect(crosswalkMalloc, W, H, overlay)
@@ -209,15 +214,17 @@ if __name__ == "__main__":
             else:
                 # Activate Warnings
                 cv2.rectangle(crosswalkFrame, (0, 0), (200, 200), (255, 255, 255), -1)
-                utils.security_ON()
+                
                 # Deactivate Warnings after DELAY_TIME
                 scheduler.cancel()  # Cancel every possible Scheduler Thread
                 scheduler = Timer(DELAY_TIME, utils.security_OFF, ())  # Restart
                 scheduler.start()
         
         ##### SHOW #####
+       
+        consoleConfig.fps = 1.0 / (time.time() - start_time)
+        consoleConfig.warnings = scheduler.is_alive()  # if True warnings are still ON
         
-        fps = 1.0 / (time.time() - start_time)
         if SHOW and not is_jetson:
             # print contour
             utils.drawContour(roadFrame, roadContour)
@@ -229,19 +236,24 @@ if __name__ == "__main__":
             crosswalkFrame = utils.print_items_to_frame(crosswalkFrame, pedestriansDown)
             
             roadFrame = utils.print_items_to_frame(roadFrame, vehicles)
-            roadFrame = utils.print_fps(roadFrame, fps)
+            roadFrame = utils.print_fps_on_frame(roadFrame, consoleConfig.fps)
+            
             # Show the frame
+            
             cv2.imshow("Crosswalk CAM", crosswalkFrame)
             cv2.imshow("Road CAM", roadFrame)
-        
+
+        utils.print_console(console, consoleConfig)
+
         #### END ####
         # Quit program pressing 'Q'
-        key = cv2.waitKey(0) & 0xFF
-        if key==ord("q"):
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
             # free GPIOs before quit
             if is_jetson:
                 gpios.warning_OFF()
                 gpios.deactivate_jetson_board()
             # close any open windows
+            curses.endwin()
             cv2.destroyAllWindows()
             break
