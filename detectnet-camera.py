@@ -214,7 +214,6 @@ if __name__ == "__main__":
                 scheduler.cancel()  # Cancel every possible Scheduler Thread
                 scheduler = Timer(DELAY_TIME, utils.security_OFF, ())  # Restart
                 scheduler.start()
-            # scheduler.run()
         
         ##### SHOW #####
         
