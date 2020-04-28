@@ -1,5 +1,6 @@
 # load yolov3 model and perform object detection
 # based on https://github.com/experiencor/keras-yolo3
+from sys import stdout
 import jetson.utils
 import platform
 from collections import OrderedDict
@@ -47,10 +48,12 @@ from numpy import save, load
 #############################################################################
 
 def security_ON():
-        print("[*] SECURITY ON [*]")
+        stdout.write("\r{0}>".format("[*] Warnings State: ON "))
+        stdout.flush()
 
 def security_OFF():
-        print("[#] SECURITY OFF [#]")
+        stdout.write("\r{0}>".format("[*] Warnings State: OFF"))
+        stdout.flush()
 
 def drawContour(image, contour):
         # Iterate over points in contour

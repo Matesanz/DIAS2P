@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # Show live results
     # when production set this to False as it consume resources
     SHOW = True
-    VIDEO = False
+    VIDEO = True
     total_frame = 0
     
     # load the object detection network
@@ -134,7 +134,7 @@ if __name__ == "__main__":
             roadMalloc, _, _ = roadCam.CaptureRGBA()
             vehicleDetections = net.Detect(roadMalloc, W, H, overlay)
         
-        # If we are not on jetson use CV2
+        # If we are NOT on jetson use CV2
         else:
             # Check if more frames are available
             if crosswalkCam.grab() and roadCam.grab():

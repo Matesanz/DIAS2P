@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from utils.utils import is_jetson_platform
+from utils.utils import is_jetson_platform, security_ON, security_OFF
 
 if is_jetson_platform():
     import Jetson.GPIO as GPIO
@@ -21,10 +21,12 @@ def deactivate_jetson_board():
 
 def warning_ON(output_pin=18):
     GPIO.output(output_pin, GPIO.HIGH)
+    security_ON()  # Print on Console
 
 
 def warning_OFF(output_pin=18):
     GPIO.output(output_pin, GPIO.LOW)
+    security_OFF()  # Print on Console
 
 
 if __name__ == '__main__':
