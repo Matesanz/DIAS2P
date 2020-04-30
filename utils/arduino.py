@@ -3,6 +3,10 @@ import time
 
 
 class arduino():
+    
+    """
+    Connects to usb plugged arduino for PC testing
+    """
     ser = None
 
 
