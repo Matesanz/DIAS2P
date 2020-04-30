@@ -270,7 +270,7 @@ if __name__ == "__main__":
         #
         # ----------------------------------
         
-        # Quit program pressing 'Q'
+        # Quit program pressing 'q'
         key = cv2.waitKey(1) & 0xFF
         if key == ord("q"):
             # free GPIOs before quit
