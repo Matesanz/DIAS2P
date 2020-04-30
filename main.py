@@ -5,7 +5,7 @@ from collections import OrderedDict
 import dlib
 import cv2
 
-from utils.gpios import deactivate_jetson_board, warning_ON, warning_OFF, activate_jetson_board
+# from utils.gpios import deactivate_jetson_board, warning_ON, warning_OFF, activate_jetson_board
 from utils.utils import get_frames_and_concatenate, set_cameras, set_detector, check_cameras
 
 if __name__ == "__main__":
@@ -16,7 +16,7 @@ if __name__ == "__main__":
         color = (255, 0, 0)
         thickness = 2
 
-        activate_jetson_board()
+        # activate_jetson_board()
 
         VIDEO = True
         VIDEO_PATH = "./Crosswalk.mp4"
@@ -155,10 +155,10 @@ if __name__ == "__main__":
                 if len(vehicles) > 0 and len(people) > 0:
                         seguridad = True
                         frame = cv2.rectangle(frame, (440, 0), (480, 40), (255,255,255), -1)
-                        warning_ON()
+                        # warning_ON()
                 else:
                         seguridad = False
-                        warning_OFF()
+                        # warning_OFF()
 
                 ######## DISPLAY OPTIONS ##########
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord("q"):
                         # close any open windows
-                        deactivate_jetson_board()
+                        # deactivate_jetson_board()
                         cv2.destroyAllWindows()
                         # out.release()
                         break
